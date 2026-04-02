@@ -1,0 +1,213 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "User profile information",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "nome": { "type": "string" },
+        "email": { "type": "string" },
+        "cargo": { "type": "string", "enum": ["Advogado", "Gestor", "Administrador", "Estagiário", "Financeiro"] },
+        "status": { "type": "string", "enum": ["Ativo", "Inativo", "Aguardando Primeiro Acesso"] },
+        "dataCadastro": { "type": "string" },
+        "fotoUrl": { "type": "string" },
+        "telefone": { "type": "string" },
+        "oab": { "type": "string" },
+        "dataAdmissao": { "type": "string" },
+        "especialidade": { "type": "string" },
+        "notificacoesEmail": { "type": "boolean" },
+        "exibirNoRanking": { "type": "boolean" },
+        "requiresPasswordChange": { "type": "boolean" }
+      },
+      "required": ["id", "nome", "email", "cargo", "status", "dataCadastro", "notificacoesEmail", "exibirNoRanking", "requiresPasswordChange"]
+    },
+    "FinanceTransaction": {
+      "title": "Finance Transaction",
+      "description": "Financial transaction record",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "data": { "type": "string" },
+        "descricao": { "type": "string" },
+        "valor": { "type": "number" },
+        "tipo": { "type": "string", "enum": ["RECEITA", "DESPESA", "TRANSFERENCIA"] },
+        "categoriaId": { "type": "string" },
+        "subcategoriaId": { "type": "string" },
+        "pago": { "type": "boolean" },
+        "competencia": { "type": "string" },
+        "criadoPor": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "bancoId": { "type": "string" },
+        "destinoBancoId": { "type": "string" }
+      },
+      "required": ["id", "data", "descricao", "valor", "tipo", "categoriaId", "subcategoriaId", "pago", "competencia", "criadoPor", "createdAt", "bancoId"]
+    },
+    "Client": {
+      "title": "Client",
+      "description": "Client record",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "tipo": { "type": "string", "enum": ["PF", "PJ"] },
+        "nome": { "type": "string" },
+        "documento": { "type": "string" },
+        "segmento": { "type": "string" },
+        "telefone": { "type": "string" },
+        "email": { "type": "string" },
+        "endereco": { "type": "object" },
+        "contatos": { "type": "array" },
+        "dataInicio": { "type": "string" },
+        "responsavelId": { "type": "string" },
+        "status": { "type": "string", "enum": ["Ativo", "Inativo"] },
+        "observacoes": { "type": "string" },
+        "criadoPor": { "type": "string" },
+        "criadoEm": { "type": "string" },
+        "editadoEm": { "type": "string" },
+        "editadoPor": { "type": "string" }
+      },
+      "required": ["id", "tipo", "nome", "documento", "telefone", "email", "endereco", "contatos", "dataInicio", "responsavelId", "status", "criadoPor", "criadoEm"]
+    },
+    "ClientContract": {
+      "title": "Client Contract",
+      "description": "Contract for a client",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "clientId": { "type": "string" },
+        "clientName": { "type": "string" },
+        "planName": { "type": "string" },
+        "planType": { "type": "string", "enum": ["VALOR_FIXO", "PERSONALIZADO", "PAGUE_PELO_USO"] },
+        "billingDay": { "type": "number" },
+        "monthlyFee": { "type": "number" },
+        "processPricingTable": { "type": "array" },
+        "performanceFeeBands": { "type": "array" },
+        "hourlyRates": { "type": "object" },
+        "planIncludes": { "type": "object" },
+        "signatureDate": { "type": "string" },
+        "expirationDate": { "type": "string" },
+        "indiceReajuste": { "type": "string" },
+        "currency": { "type": "string" },
+        "notes": { "type": "string" }
+      },
+      "required": ["id", "clientId", "clientName", "planName", "planType", "billingDay", "monthlyFee", "processPricingTable", "performanceFeeBands", "hourlyRates", "planIncludes", "signatureDate", "expirationDate", "indiceReajuste", "currency"]
+    },
+    "MonthlyBillingEntry": {
+      "title": "Monthly Billing Entry",
+      "description": "Monthly billing record",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "contractId": { "type": "string" },
+        "clientId": { "type": "string" },
+        "clientName": { "type": "string" },
+        "month": { "type": "string" },
+        "fixedMonthlyValue": { "type": "number" },
+        "totalReportedProcesses": { "type": "number" },
+        "billableProcessCount": { "type": "number" },
+        "billableProcessValue": { "type": "number" },
+        "hoursSenior": { "type": "number" },
+        "hoursPleno": { "type": "number" },
+        "hoursJunior": { "type": "number" },
+        "totalExecutedHours": { "type": "number" },
+        "hourlyRateType": { "type": "string" },
+        "hourlyRateUsed": { "type": "number" },
+        "totalHoursValue": { "type": "number" },
+        "performanceBaseValue": { "type": "number" },
+        "performancePercentage": { "type": "number" },
+        "performanceFeeValue": { "type": "number" },
+        "otherFees": { "type": "number" },
+        "otherFeesReason": { "type": "string" },
+        "totalAmount": { "type": "number" },
+        "status": { "type": "string", "enum": ["RASCUNHO", "FINALIZADO", "ENVIADO", "PAGO"] },
+        "attachments": { "type": "array" },
+        "createdBy": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "sentToFinanceAt": { "type": "string" },
+        "isPaid": { "type": "boolean" },
+        "correctionRequestedAt": { "type": "string" },
+        "correctionReason": { "type": "string" }
+      },
+      "required": ["id", "contractId", "clientId", "clientName", "month", "fixedMonthlyValue", "totalReportedProcesses", "billableProcessCount", "billableProcessValue", "hoursSenior", "hoursPleno", "hoursJunior", "totalExecutedHours", "hourlyRateType", "hourlyRateUsed", "totalHoursValue", "performanceBaseValue", "performancePercentage", "performanceFeeValue", "otherFees", "totalAmount", "status", "attachments", "createdBy", "createdAt"]
+    },
+    "Assignment": {
+      "title": "Assignment",
+      "description": "Task or assignment for a lawyer",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "titulo": { "type": "string" },
+        "descricao": { "type": "string" },
+        "advogadoId": { "type": "string" },
+        "advogadoNome": { "type": "string" },
+        "prazo": { "type": "string" },
+        "pontos": { "type": "number" },
+        "penalidade": { "type": "number" },
+        "categoria": { "type": "string" },
+        "prioridade": { "type": "string" },
+        "status": { "type": "string", "enum": ["PENDENTE", "AGUARDANDO_VALIDACAO", "APROVADO", "REPROVADO"] },
+        "criadoEm": { "type": "string" },
+        "concluidoEm": { "type": "string" },
+        "evidenciaAdvogado": { "type": "string" },
+        "validadoPor": { "type": "string" },
+        "validadoEm": { "type": "string" },
+        "motivoReprovacao": { "type": "string" }
+      },
+      "required": ["id", "titulo", "descricao", "advogadoId", "advogadoNome", "prazo", "pontos", "penalidade", "categoria", "prioridade", "status", "criadoEm"]
+    },
+    "Processo": {
+      "title": "Processo",
+      "description": "Legal process",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "numero_processo": { "type": "string" },
+        "cliente": { "type": "string" },
+        "clienteId": { "type": "string" },
+        "tipo_processo": { "type": "string" },
+        "tipo_honorarios": { "type": "string" },
+        "advogado_responsavel": { "type": "string" },
+        "data_cadastro": { "type": "string" },
+        "valor_honorarios": { "type": "number" },
+        "valor_sucumbencial": { "type": "number" },
+        "fase_processual": { "type": "string" },
+        "tribunal": { "type": "string" },
+        "vara": { "type": "string" },
+        "observacoes_gestor": { "type": "string" },
+        "status": { "type": "string" },
+        "timeline": { "type": "array" }
+      },
+      "required": ["id", "numero_processo", "cliente", "clienteId", "tipo_processo", "tipo_honorarios", "advogado_responsavel", "data_cadastro", "valor_honorarios", "fase_processual", "tribunal", "vara", "observacoes_gestor", "status", "timeline"]
+    }
+  },
+  "firestore": {
+    "users": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Collection of user profiles"
+    },
+    "finance_transactions": {
+      "schema": { "$ref": "#/entities/FinanceTransaction" },
+      "description": "Collection of financial transactions"
+    },
+    "clients": {
+      "schema": { "$ref": "#/entities/Client" },
+      "description": "Collection of clients"
+    },
+    "contracts": {
+      "schema": { "$ref": "#/entities/ClientContract" },
+      "description": "Collection of client contracts"
+    },
+    "billing_entries": {
+      "schema": { "$ref": "#/entities/MonthlyBillingEntry" },
+      "description": "Collection of monthly billing entries"
+    },
+    "assignments": {
+      "schema": { "$ref": "#/entities/Assignment" },
+      "description": "Collection of assignments"
+    },
+    "processes": {
+      "schema": { "$ref": "#/entities/Processo" },
+      "description": "Collection of legal processes"
+    }
+  }
+}

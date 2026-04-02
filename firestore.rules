@@ -1,0 +1,309 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // This security rules file assumes the following data structures:
+    //
+    // Collection: users
+    // Document ID: user UID
+    // Fields:
+    //   - id: string (required)
+    //   - nome: string (required)
+    //   - email: string (required)
+    //   - cargo: string (required) - 'Advogado', 'Gestor', 'Administrador', 'Estagiário', 'Financeiro'
+    //   - status: string (required)
+    //   - dataCadastro: string (required)
+    //   - notificacoesEmail: boolean (required)
+    //   - exibirNoRanking: boolean (required)
+    //   - requiresPasswordChange: boolean (required)
+    //
+    // Collection: finance_transactions
+    // Document ID: auto-generated
+    // Fields:
+    //   - id: string (required)
+    //   - data: string (required)
+    //   - descricao: string (required)
+    //   - valor: number (required)
+    //   - tipo: string (required) - 'RECEITA', 'DESPESA', 'TRANSFERENCIA'
+    //   - categoriaId: string (required)
+    //   - subcategoriaId: string (required)
+    //   - pago: boolean (required)
+    //   - competencia: string (required)
+    //   - criadoPor: string (required)
+    //   - createdAt: string (required)
+    //   - bancoId: string (required)
+    //
+    // Collection: clients
+    // Document ID: auto-generated
+    // Fields:
+    //   - id: string (required)
+    //   - tipo: string (required) - 'PF', 'PJ'
+    //   - nome: string (required)
+    //   - documento: string (required)
+    //   - telefone: string (required)
+    //   - email: string (required)
+    //   - endereco: map (required)
+    //   - contatos: list (required)
+    //   - dataInicio: string (required)
+    //   - responsavelId: string (required)
+    //   - status: string (required) - 'Ativo', 'Inativo'
+    //   - criadoPor: string (required)
+    //   - criadoEm: string (required)
+    //
+    // Collection: contracts
+    // Document ID: auto-generated
+    // Fields:
+    //   - id: string (required)
+    //   - clientId: string (required)
+    //   - clientName: string (required)
+    //   - planName: string (required)
+    //   - planType: string (required)
+    //   - billingDay: number (required)
+    //   - monthlyFee: number (required)
+    //   - processPricingTable: list (required)
+    //   - performanceFeeBands: list (required)
+    //   - hourlyRates: map (required)
+    //   - planIncludes: map (required)
+    //   - signatureDate: string (required)
+    //   - expirationDate: string (required)
+    //   - indiceReajuste: string (required)
+    //   - currency: string (required)
+    //
+    // Collection: billing_entries
+    // Document ID: auto-generated
+    // Fields:
+    //   - id: string (required)
+    //   - contractId: string (required)
+    //   - clientId: string (required)
+    //   - clientName: string (required)
+    //   - month: string (required)
+    //   - fixedMonthlyValue: number (required)
+    //   - totalReportedProcesses: number (required)
+    //   - billableProcessCount: number (required)
+    //   - billableProcessValue: number (required)
+    //   - hoursSenior: number (required)
+    //   - hoursPleno: number (required)
+    //   - hoursJunior: number (required)
+    //   - totalExecutedHours: number (required)
+    //   - hourlyRateType: string (required)
+    //   - hourlyRateUsed: number (required)
+    //   - totalHoursValue: number (required)
+    //   - performanceBaseValue: number (required)
+    //   - performancePercentage: number (required)
+    //   - performanceFeeValue: number (required)
+    //   - otherFees: number (required)
+    //   - totalAmount: number (required)
+    //   - status: string (required) - 'RASCUNHO', 'FINALIZADO', 'ENVIADO', 'PAGO'
+    //   - attachments: list (required)
+    //   - createdBy: string (required)
+    //   - createdAt: string (required)
+    //
+    // Collection: assignments
+    // Document ID: auto-generated
+    // Fields:
+    //   - id: string (required)
+    //   - titulo: string (required)
+    //   - descricao: string (required)
+    //   - advogadoId: string (required)
+    //   - advogadoNome: string (required)
+    //   - prazo: string (required)
+    //   - pontos: number (required)
+    //   - penalidade: number (required)
+    //   - categoria: string (required)
+    //   - prioridade: string (required)
+    //   - status: string (required) - 'PENDENTE', 'AGUARDANDO_VALIDACAO', 'APROVADO', 'REPROVADO'
+    //   - criadoEm: string (required)
+    //
+    // Collection: processes
+    // Document ID: auto-generated
+    // Fields:
+    //   - id: string (required)
+    //   - numero_processo: string (required)
+    //   - cliente: string (required)
+    //   - clienteId: string (required)
+    //   - tipo_processo: string (required)
+    //   - tipo_honorarios: string (required)
+    //   - advogado_responsavel: string (required)
+    //   - data_cadastro: string (required)
+    //   - valor_honorarios: number (required)
+    //   - fase_processual: string (required)
+    //   - tribunal: string (required)
+    //   - vara: string (required)
+    //   - observacoes_gestor: string (required)
+    //   - status: string (required)
+    //   - timeline: list (required)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.cargo == 'Administrador') ||
+        (request.auth.token.email == "diegociatos@gmail.com" && request.auth.token.email_verified == true)
+      );
+    }
+
+    function isGestor() {
+      return isAuthenticated() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.cargo == 'Gestor';
+    }
+
+    function isFinanceiro() {
+      return isAuthenticated() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.cargo == 'Financeiro';
+    }
+
+    function hasRole(roles) {
+      return isAuthenticated() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.cargo in roles;
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function areImmutableFieldsUnchanged(fields) {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(fields);
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidUser(data) {
+      return hasRequiredFields(['id', 'nome', 'email', 'cargo', 'status', 'dataCadastro', 'notificacoesEmail', 'exibirNoRanking', 'requiresPasswordChange']) &&
+             data.nome is string && data.nome.size() > 0 && data.nome.size() <= 100 &&
+             isValidEmail(data.email) &&
+             data.cargo in ['Advogado', 'Gestor', 'Administrador', 'Estagiário', 'Financeiro'] &&
+             data.status in ['Ativo', 'Inativo', 'Aguardando Primeiro Acesso'] &&
+             data.notificacoesEmail is bool &&
+             data.exibirNoRanking is bool &&
+             data.requiresPasswordChange is bool;
+    }
+
+    function isValidFinanceTransaction(data) {
+      return hasRequiredFields(['id', 'data', 'descricao', 'valor', 'tipo', 'categoriaId', 'subcategoriaId', 'pago', 'competencia', 'criadoPor', 'createdAt', 'bancoId']) &&
+             data.descricao is string && data.descricao.size() > 0 && data.descricao.size() <= 500 &&
+             data.valor is number &&
+             data.tipo in ['RECEITA', 'DESPESA', 'TRANSFERENCIA'] &&
+             data.pago is bool;
+    }
+
+    function isValidClient(data) {
+      return hasRequiredFields(['id', 'tipo', 'nome', 'documento', 'telefone', 'email', 'endereco', 'contatos', 'dataInicio', 'responsavelId', 'status', 'criadoPor', 'criadoEm']) &&
+             data.tipo in ['PF', 'PJ'] &&
+             data.nome is string && data.nome.size() > 0 && data.nome.size() <= 200 &&
+             data.documento is string && data.documento.size() <= 50 &&
+             isValidEmail(data.email) &&
+             data.status in ['Ativo', 'Inativo'] &&
+             data.endereco is map &&
+             data.contatos is list;
+    }
+
+    function isValidContract(data) {
+      return hasRequiredFields(['id', 'clientId', 'clientName', 'planName', 'planType', 'billingDay', 'monthlyFee', 'processPricingTable', 'performanceFeeBands', 'hourlyRates', 'planIncludes', 'signatureDate', 'expirationDate', 'indiceReajuste', 'currency']) &&
+             data.planType in ['VALOR_FIXO', 'PERSONALIZADO', 'PAGUE_PELO_USO'] &&
+             data.billingDay is number && data.billingDay >= 1 && data.billingDay <= 31 &&
+             data.monthlyFee is number && data.monthlyFee >= 0 &&
+             data.processPricingTable is list &&
+             data.performanceFeeBands is list &&
+             data.hourlyRates is map &&
+             data.planIncludes is map;
+    }
+
+    function isValidBillingEntry(data) {
+      return hasRequiredFields(['id', 'contractId', 'clientId', 'clientName', 'month', 'fixedMonthlyValue', 'totalReportedProcesses', 'billableProcessCount', 'billableProcessValue', 'hoursSenior', 'hoursPleno', 'hoursJunior', 'totalExecutedHours', 'hourlyRateType', 'hourlyRateUsed', 'totalHoursValue', 'performanceBaseValue', 'performancePercentage', 'performanceFeeValue', 'otherFees', 'totalAmount', 'status', 'attachments', 'createdBy', 'createdAt']) &&
+             data.status in ['RASCUNHO', 'FINALIZADO', 'ENVIADO', 'PAGO'] &&
+             data.totalAmount is number && data.totalAmount >= 0 &&
+             data.attachments is list;
+    }
+
+    function isValidAssignment(data) {
+      return hasRequiredFields(['id', 'titulo', 'descricao', 'advogadoId', 'advogadoNome', 'prazo', 'pontos', 'penalidade', 'categoria', 'prioridade', 'status', 'criadoEm']) &&
+             data.titulo is string && data.titulo.size() > 0 && data.titulo.size() <= 200 &&
+             data.descricao is string && data.descricao.size() <= 2000 &&
+             data.status in ['PENDENTE', 'AGUARDANDO_VALIDACAO', 'APROVADO', 'REPROVADO'] &&
+             data.pontos is number && data.pontos >= 0 &&
+             data.penalidade is number && data.penalidade >= 0;
+    }
+
+    function isValidProcess(data) {
+      return hasRequiredFields(['id', 'numero_processo', 'cliente', 'clienteId', 'tipo_processo', 'tipo_honorarios', 'advogado_responsavel', 'data_cadastro', 'valor_honorarios', 'fase_processual', 'tribunal', 'vara', 'observacoes_gestor', 'status', 'timeline']) &&
+             data.numero_processo is string && data.numero_processo.size() > 0 && data.numero_processo.size() <= 100 &&
+             data.valor_honorarios is number && data.valor_honorarios >= 0 &&
+             data.timeline is list;
+    }
+
+    // ===============================================================
+    // Collection Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidUser(request.resource.data) && (isAdmin() || (isOwner(userId) && request.resource.data.cargo == 'Advogado'));
+      allow update: if isAuthenticated() && isValidUser(request.resource.data) && (isAdmin() || (isOwner(userId) && areImmutableFieldsUnchanged(['cargo', 'dataCadastro', 'id'])));
+      allow delete: if isAdmin();
+    }
+
+    match /finance_transactions/{transactionId} {
+      allow read: if isAdmin() || isFinanceiro() || isGestor();
+      allow create: if (isAdmin() || isFinanceiro() || isGestor()) && isValidFinanceTransaction(request.resource.data);
+      allow update: if (isAdmin() || isFinanceiro() || isGestor()) && isValidFinanceTransaction(request.resource.data) && areImmutableFieldsUnchanged(['id', 'createdAt', 'criadoPor']);
+      allow delete: if isAdmin() || isFinanceiro();
+    }
+
+    match /clients/{clientId} {
+      allow read: if isAuthenticated();
+      allow create: if (isAdmin() || isGestor() || isFinanceiro()) && isValidClient(request.resource.data);
+      allow update: if (isAdmin() || isGestor() || isFinanceiro()) && isValidClient(request.resource.data) && areImmutableFieldsUnchanged(['id', 'criadoEm', 'criadoPor']);
+      allow delete: if isAdmin();
+    }
+
+    match /contracts/{contractId} {
+      allow read: if isAdmin() || isGestor() || isFinanceiro();
+      allow create: if (isAdmin() || isGestor() || isFinanceiro()) && isValidContract(request.resource.data);
+      allow update: if (isAdmin() || isGestor() || isFinanceiro()) && isValidContract(request.resource.data) && areImmutableFieldsUnchanged(['id', 'clientId']);
+      allow delete: if isAdmin();
+    }
+
+    match /billing_entries/{entryId} {
+      allow read: if isAdmin() || isGestor() || isFinanceiro();
+      allow create: if (isAdmin() || isGestor() || isFinanceiro()) && isValidBillingEntry(request.resource.data);
+      allow update: if (isAdmin() || isGestor() || isFinanceiro()) && isValidBillingEntry(request.resource.data) && areImmutableFieldsUnchanged(['id', 'createdAt', 'createdBy']);
+      allow delete: if isAdmin();
+    }
+
+    match /assignments/{assignmentId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidAssignment(request.resource.data);
+      allow update: if isAuthenticated() && isValidAssignment(request.resource.data) && areImmutableFieldsUnchanged(['id', 'criadoEm']);
+      allow delete: if isAdmin() || isGestor();
+    }
+
+    match /processes/{processId} {
+      allow read: if isAuthenticated();
+      allow create: if (isAdmin() || isGestor()) && isValidProcess(request.resource.data);
+      allow update: if isAuthenticated() && isValidProcess(request.resource.data) && areImmutableFieldsUnchanged(['id', 'data_cadastro']);
+      allow delete: if isAdmin() || isGestor();
+    }
+  }
+}
