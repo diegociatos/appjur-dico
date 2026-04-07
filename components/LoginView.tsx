@@ -1,6 +1,8 @@
 
 import React, { useState } from 'react';
 import { Mail, Lock, Eye, EyeOff, AlertCircle, ChevronRight, Scale, ShieldCheck } from 'lucide-react';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '../firebase';
 import ForgotPasswordModal from './ForgotPasswordModal';
 
 interface LoginViewProps {
@@ -16,20 +18,26 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
   const [rememberMe, setRememberMe] = useState(false);
   const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
 
-    // Simulação de delay para sofisticação de UX
-    setTimeout(() => {
-      if (email === 'admin@ciatos.com.br' && password === '123') {
-        onLogin(email);
-      } else {
+    try {
+      await signInWithEmailAndPassword(auth, email.trim(), password);
+      onLogin(email.trim());
+    } catch (err: any) {
+      const code = err?.code || '';
+      if (code === 'auth/user-not-found' || code === 'auth/wrong-password' || code === 'auth/invalid-credential') {
         setError('Credenciais inválidas. Por favor, verifique seu e-mail e senha.');
-        setIsLoading(false);
+      } else if (code === 'auth/too-many-requests') {
+        setError('Muitas tentativas. Aguarde alguns minutos e tente novamente.');
+      } else {
+        setError('Erro ao autenticar. Tente novamente.');
       }
-    }, 800);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const LOGO_URL = "https://cdn.abacus.ai/images/2f20f120-949f-4315-bb81-525502e9b98c.png";

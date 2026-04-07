@@ -1,6 +1,8 @@
 
 import React, { useState } from 'react';
-import { X, Mail, Send, CheckCircle2, ArrowLeft } from 'lucide-react';
+import { X, Mail, Send, CheckCircle2, ArrowLeft, AlertCircle } from 'lucide-react';
+import { sendPasswordResetEmail } from 'firebase/auth';
+import { auth } from '../firebase';
 
 interface ForgotPasswordModalProps {
   isOpen: boolean;
@@ -10,13 +12,23 @@ interface ForgotPasswordModalProps {
 const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen, onClose }) => {
   const [email, setEmail] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulação de envio
-    setSubmitted(true);
+    setError('');
+    setIsLoading(true);
+    try {
+      await sendPasswordResetEmail(auth, email.trim());
+      setSubmitted(true);
+    } catch (err: any) {
+      setError('Erro ao enviar e-mail. Verifique o endereço informado.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -36,6 +48,12 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen, onClo
             </p>
 
             <form onSubmit={handleSubmit} className="space-y-8">
+              {error && (
+                <div className="p-4 bg-red-50 border border-red-100 rounded-2xl flex items-center gap-3">
+                  <AlertCircle size={18} className="text-red-500 shrink-0" />
+                  <span className="text-xs font-semibold text-red-600">{error}</span>
+                </div>
+              )}
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block ml-1">E-mail Institucional</label>
                 <div className="relative group">
@@ -53,9 +71,14 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen, onClo
 
               <button 
                 type="submit"
-                className="w-full py-5 bg-[#801538] text-white rounded-2xl font-black text-[11px] uppercase tracking-widest shadow-xl shadow-[#801538]/20 flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-95 transition-all"
+                disabled={isLoading}
+                className="w-full py-5 bg-[#801538] text-white rounded-2xl font-black text-[11px] uppercase tracking-widest shadow-xl shadow-[#801538]/20 flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-70"
               >
-                <Send size={18} /> Enviar Instruções
+                {isLoading ? (
+                  <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+                ) : (
+                  <><Send size={18} /> Enviar Instruções</>
+                )}
               </button>
             </form>
           </div>

@@ -154,7 +154,7 @@ service cloud.firestore {
       return isAuthenticated() && (
         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.cargo == 'Administrador') ||
-        (request.auth.token.email == "diegociatos@gmail.com" && request.auth.token.email_verified == true)
+        (request.auth.token.email in ["diegociatos@gmail.com", "diego.garcia@grupociatos.com.br"] && request.auth.token.email_verified == true)
       );
     }
 
@@ -304,6 +304,81 @@ service cloud.firestore {
       allow create: if (isAdmin() || isGestor()) && isValidProcess(request.resource.data);
       allow update: if isAuthenticated() && isValidProcess(request.resource.data) && areImmutableFieldsUnchanged(['id', 'data_cadastro']);
       allow delete: if isAdmin() || isGestor();
+    }
+
+    // ===============================================================
+    // Additional Collections
+    // ===============================================================
+
+    match /finance_banks/{bankId} {
+      allow read: if isAdmin() || isFinanceiro() || isGestor();
+      allow write: if isAdmin() || isFinanceiro();
+    }
+
+    match /finance_categories/{catId} {
+      allow read: if isAdmin() || isFinanceiro() || isGestor();
+      allow write: if isAdmin() || isFinanceiro();
+    }
+
+    match /finance_subcategories/{subId} {
+      allow read: if isAdmin() || isFinanceiro() || isGestor();
+      allow write: if isAdmin() || isFinanceiro();
+    }
+
+    match /finance_monthly_balances/{balId} {
+      allow read: if isAdmin() || isFinanceiro() || isGestor();
+      allow write: if isAdmin() || isFinanceiro();
+    }
+
+    match /historical_data/{yearId} {
+      allow read: if isAdmin() || isFinanceiro() || isGestor();
+      allow write: if isAdmin() || isFinanceiro();
+    }
+
+    match /point_rules/{ruleId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin() || isGestor();
+    }
+
+    match /daily_types/{typeId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin() || isGestor();
+    }
+
+    match /daily_categories/{catId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin() || isGestor();
+    }
+
+    match /daily_entries/{entryId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+
+    match /score_events/{eventId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin() || isGestor();
+    }
+
+    match /indicators/{indicatorId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin() || isGestor();
+    }
+
+    match /audit_logs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isAuthenticated();
+      allow update, delete: if false;
+    }
+
+    match /notifications/{notifId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+
+    match /config/{configId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin() || isGestor();
     }
   }
 }
