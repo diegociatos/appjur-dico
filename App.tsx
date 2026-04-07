@@ -150,8 +150,15 @@ const App: React.FC = () => {
             exibirNoRanking: true,
             requiresPasswordChange: false,
           };
-          await setDoc(userDocRef, newUser);
-          setCurrentUser(newUser);
+          try {
+            await setDoc(userDocRef, newUser);
+            setCurrentUser(newUser);
+          } catch (err) {
+            console.error('Failed to create user profile:', err);
+            await signOut(auth);
+            setIsAuthLoading(false);
+            return;
+          }
         }
         setIsLoggedIn(true);
       } else {

@@ -154,7 +154,7 @@ service cloud.firestore {
       return isAuthenticated() && (
         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.cargo == 'Administrador') ||
-        (request.auth.token.email in ["diegociatos@gmail.com", "diego.garcia@grupociatos.com.br"] && request.auth.token.email_verified == true)
+        request.auth.token.email in ["diegociatos@gmail.com", "diego.garcia@grupociatos.com.br"]
       );
     }
 
