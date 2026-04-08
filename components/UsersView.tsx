@@ -23,7 +23,7 @@ import NewUserModal from './NewUserModal';
 
 interface UsersViewProps {
   users: UserProfile[];
-  onAddUser: (user: UserProfile) => void;
+  onAddUser: (user: UserProfile, password?: string) => void;
   onUpdateUser: (user: UserProfile) => void;
   onResetPassword: (userId: string) => void;
 }
@@ -221,9 +221,9 @@ const UsersView: React.FC<UsersViewProps> = ({ users, onAddUser, onUpdateUser, o
         isOpen={isModalOpen} 
         userToEdit={editingUser || undefined}
         onClose={() => { setIsModalOpen(false); setEditingUser(null); }} 
-        onSave={(u) => {
+        onSave={(u, password) => {
           if (editingUser) onUpdateUser(u);
-          else onAddUser(u);
+          else onAddUser(u, password);
         }} 
       />
 

@@ -3,6 +3,7 @@ import { ShieldAlert, Lock, Loader2 } from 'lucide-react';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc, setDoc, onSnapshot, collection, updateDoc, deleteDoc, addDoc } from 'firebase/firestore';
 import { auth, db } from './firebase';
+import firebaseConfig from './firebase-applet-config.json';
 
 import Sidebar from './components/Sidebar';
 import TopHeader from './components/TopHeader';
@@ -417,7 +418,32 @@ const App: React.FC = () => {
   const handleUpdateTransaction = (t: FinanceTransaction) => firestoreUpdate('finance_transactions', t.id, t);
   const handleDeleteTransaction = (id: string) => firestoreDelete('finance_transactions', id);
 
-  const handleAddUser = (u: UserProfile) => firestoreAdd('users', u);
+  const handleAddUser = async (u: UserProfile, password?: string) => {
+    if (password && u.email) {
+      try {
+        // Create Firebase Auth account via REST API (avoids switching current session)
+        const res = await fetch(
+          `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${firebaseConfig.apiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: u.email, password, returnSecureToken: false }),
+          }
+        );
+        const data = await res.json();
+        if (data.error) {
+          alert(`Erro ao criar conta: ${data.error.message}`);
+          return;
+        }
+        // Use the Firebase Auth UID as the Firestore doc ID
+        u.id = data.localId;
+      } catch (err) {
+        alert('Erro ao criar conta de autenticação');
+        return;
+      }
+    }
+    firestoreAdd('users', u);
+  };
   const handleUpdateUser = (u: UserProfile) => firestoreUpdate('users', u.id, u);
   const handleResetPassword = (id: string) => {
     const u = users.find(x => x.id === id);

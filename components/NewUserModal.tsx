@@ -6,7 +6,7 @@ import { UserProfile, UserRole, UserStatus } from '../types';
 interface NewUserModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (user: UserProfile) => void;
+  onSave: (user: UserProfile, password?: string) => void;
   userToEdit?: UserProfile;
 }
 
@@ -97,7 +97,7 @@ const NewUserModal: React.FC<NewUserModalProps> = ({ isOpen, onClose, onSave, us
       fotoUrl: userToEdit?.fotoUrl
     };
 
-    onSave(savedUser);
+    onSave(savedUser, userToEdit ? undefined : provisionalPassword);
     onClose();
   };
 
