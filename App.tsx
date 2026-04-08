@@ -418,10 +418,9 @@ const App: React.FC = () => {
   const handleUpdateTransaction = (t: FinanceTransaction) => firestoreUpdate('finance_transactions', t.id, t);
   const handleDeleteTransaction = (id: string) => firestoreDelete('finance_transactions', id);
 
-  const handleAddUser = async (u: UserProfile, password?: string) => {
+  const handleAddUser = async (u: UserProfile, password?: string): Promise<boolean> => {
     if (password && u.email) {
       try {
-        // Create Firebase Auth account via REST API (avoids switching current session)
         const res = await fetch(
           `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${firebaseConfig.apiKey}`,
           {
@@ -432,17 +431,37 @@ const App: React.FC = () => {
         );
         const data = await res.json();
         if (data.error) {
-          alert(`Erro ao criar conta: ${data.error.message}`);
-          return;
+          if (data.error.message === 'EMAIL_EXISTS') {
+            // Account already exists — look up UID and create Firestore doc
+            const lookupRes = await fetch(
+              `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${firebaseConfig.apiKey}`,
+              {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: u.email, password, returnSecureToken: false }),
+              }
+            );
+            const lookupData = await lookupRes.json();
+            if (lookupData.localId) {
+              u.id = lookupData.localId;
+            } else {
+              // Can't sign in (wrong password) — create Firestore doc with generated ID
+              u.id = `user_${Date.now()}`;
+            }
+          } else {
+            alert(`Erro ao criar conta: ${data.error.message}`);
+            return false;
+          }
+        } else {
+          u.id = data.localId;
         }
-        // Use the Firebase Auth UID as the Firestore doc ID
-        u.id = data.localId;
       } catch (err) {
         alert('Erro ao criar conta de autenticação');
-        return;
+        return false;
       }
     }
     firestoreAdd('users', u);
+    return true;
   };
   const handleUpdateUser = (u: UserProfile) => firestoreUpdate('users', u.id, u);
   const handleResetPassword = (id: string) => {

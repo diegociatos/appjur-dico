@@ -6,7 +6,7 @@ import { UserProfile, UserRole, UserStatus } from '../types';
 interface NewUserModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (user: UserProfile, password?: string) => void;
+  onSave: (user: UserProfile, password?: string) => void | Promise<void>;
   userToEdit?: UserProfile;
 }
 
@@ -82,7 +82,7 @@ const NewUserModal: React.FC<NewUserModalProps> = ({ isOpen, onClose, onSave, us
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
 
@@ -97,7 +97,7 @@ const NewUserModal: React.FC<NewUserModalProps> = ({ isOpen, onClose, onSave, us
       fotoUrl: userToEdit?.fotoUrl
     };
 
-    onSave(savedUser, userToEdit ? undefined : provisionalPassword);
+    await Promise.resolve(onSave(savedUser, userToEdit ? undefined : provisionalPassword));
     onClose();
   };
 

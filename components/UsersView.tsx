@@ -23,7 +23,7 @@ import NewUserModal from './NewUserModal';
 
 interface UsersViewProps {
   users: UserProfile[];
-  onAddUser: (user: UserProfile, password?: string) => void;
+  onAddUser: (user: UserProfile, password?: string) => Promise<boolean>;
   onUpdateUser: (user: UserProfile) => void;
   onResetPassword: (userId: string) => void;
 }
@@ -33,6 +33,9 @@ const UsersView: React.FC<UsersViewProps> = ({ users, onAddUser, onUpdateUser, o
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
   const [filterRole, setFilterRole] = useState<string>('Todos');
+  const [createdUserModal, setCreatedUserModal] = useState<{ isOpen: boolean; userName: string; email: string; password: string }>({
+    isOpen: false, userName: '', email: '', password: ''
+  });
 
   // Estado para o Modal de Reset de Senha
   const [resetModalData, setResetModalData] = useState<{ isOpen: boolean; userId: string; userName: string; newPass: string }>({
@@ -221,9 +224,15 @@ const UsersView: React.FC<UsersViewProps> = ({ users, onAddUser, onUpdateUser, o
         isOpen={isModalOpen} 
         userToEdit={editingUser || undefined}
         onClose={() => { setIsModalOpen(false); setEditingUser(null); }} 
-        onSave={(u, password) => {
-          if (editingUser) onUpdateUser(u);
-          else onAddUser(u, password);
+        onSave={async (u, password) => {
+          if (editingUser) {
+            onUpdateUser(u);
+          } else {
+            const success = await onAddUser(u, password);
+            if (success && password) {
+              setCreatedUserModal({ isOpen: true, userName: u.nome, email: u.email, password });
+            }
+          }
         }} 
       />
 
@@ -274,6 +283,68 @@ const UsersView: React.FC<UsersViewProps> = ({ users, onAddUser, onUpdateUser, o
               <div className="p-8 bg-gray-50 border-t border-gray-100 text-right">
                  <button 
                    onClick={() => setResetModalData(prev => ({ ...prev, isOpen: false }))}
+                   className="px-8 py-3.5 bg-[#8B1538] text-white rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-[#8B1538]/20"
+                 >
+                   Entendido
+                 </button>
+              </div>
+           </div>
+        </div>
+      )}
+
+      {/* MODAL DE CONFIRMAÇÃO DE CRIAÇÃO DE USUÁRIO */}
+      {createdUserModal.isOpen && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[1100] flex items-center justify-center p-4">
+           <div className="bg-white rounded-[2.5rem] w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in duration-300">
+              <div className="p-8 border-b border-gray-100 flex items-center justify-between">
+                 <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center text-green-500">
+                      <CheckCircle2 size={20} />
+                    </div>
+                    <h3 className="text-lg font-serif font-bold text-[#8B1538]">Usuário Criado</h3>
+                 </div>
+                 <button onClick={() => setCreatedUserModal(prev => ({ ...prev, isOpen: false }))} className="text-gray-400 hover:text-red-500 transition-colors">
+                    <X size={24} />
+                 </button>
+              </div>
+              <div className="p-10 space-y-6">
+                 <p className="text-sm text-gray-500 leading-relaxed font-serif italic">
+                   O usuário <strong>{createdUserModal.userName}</strong> foi criado com sucesso. 
+                   Anote as credenciais abaixo para informar ao colaborador.
+                 </p>
+                 
+                 <div className="space-y-2">
+                    <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest block">E-mail</label>
+                    <div className="bg-gray-50 border border-gray-100 rounded-xl px-6 py-4 text-sm font-medium text-gray-700 select-all">
+                       {createdUserModal.email}
+                    </div>
+                 </div>
+
+                 <div className="space-y-2">
+                    <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest block">Senha Provisória</label>
+                    <div className="flex gap-2">
+                       <div className="flex-1 bg-gray-50 border border-gray-100 rounded-xl px-6 py-4 text-lg font-mono font-bold tracking-widest text-[#8B1538] select-all">
+                          {createdUserModal.password}
+                       </div>
+                       <button 
+                         onClick={handleCopy}
+                         className={`px-5 rounded-xl border transition-all flex items-center justify-center ${copied ? 'bg-green-500 border-green-500 text-white' : 'bg-white border-gray-200 text-gray-400 hover:text-[#8B1538]'}`}
+                       >
+                         {copied ? <CheckCircle2 size={20} /> : <Copy size={20} />}
+                       </button>
+                    </div>
+                 </div>
+
+                 <div className="flex items-start gap-3 p-4 bg-amber-50 rounded-2xl border border-amber-100">
+                    <AlertCircle size={16} className="text-amber-600 mt-0.5 shrink-0" />
+                    <p className="text-[10px] font-serif font-medium text-amber-900 leading-relaxed italic">
+                      O usuário deverá criar uma nova senha pessoal no primeiro acesso ao sistema.
+                    </p>
+                 </div>
+              </div>
+              <div className="p-8 bg-gray-50 border-t border-gray-100 text-right">
+                 <button 
+                   onClick={() => setCreatedUserModal(prev => ({ ...prev, isOpen: false }))}
                    className="px-8 py-3.5 bg-[#8B1538] text-white rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-[#8B1538]/20"
                  >
                    Entendido
