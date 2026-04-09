@@ -157,10 +157,10 @@ const NewUserModal: React.FC<NewUserModalProps> = ({ isOpen, onClose, onSave, us
                 className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-4 text-sm font-bold outline-none cursor-pointer"
               >
                 <option value="Advogado">Advogado</option>
-                {/* Fix: changed 'Gestora' to 'Gestor' as it's the correct value for UserRole type */}
                 <option value="Gestor">Gestora</option>
                 <option value="Administrador">Administrador</option>
                 <option value="Estagiário">Estagiário</option>
+                <option value="Financeiro">Financeiro</option>
               </select>
             </div>
             <div className="space-y-2">

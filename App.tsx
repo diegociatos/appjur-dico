@@ -460,7 +460,13 @@ const App: React.FC = () => {
         return false;
       }
     }
-    firestoreAdd('users', u);
+    try {
+      await firestoreAdd('users', u);
+    } catch (err) {
+      console.error('Failed to save user to Firestore:', err);
+      alert('Conta criada mas erro ao salvar perfil. Tente novamente.');
+      return false;
+    }
     return true;
   };
   const handleUpdateUser = (u: UserProfile) => firestoreUpdate('users', u.id, u);
