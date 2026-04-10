@@ -461,7 +461,9 @@ const App: React.FC = () => {
       }
     }
     try {
-      await firestoreAdd('users', u);
+      // Strip undefined fields — Firestore rejects them
+      const cleanUser = Object.fromEntries(Object.entries(u).filter(([_, v]) => v !== undefined));
+      await firestoreAdd('users', cleanUser);
     } catch (err) {
       console.error('Failed to save user to Firestore:', err);
       alert('Conta criada mas erro ao salvar perfil. Tente novamente.');

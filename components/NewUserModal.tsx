@@ -94,7 +94,7 @@ const NewUserModal: React.FC<NewUserModalProps> = ({ isOpen, onClose, onSave, us
       notificacoesEmail: userToEdit ? userToEdit.notificacoesEmail : true,
       exibirNoRanking: userToEdit ? userToEdit.exibirNoRanking : true,
       requiresPasswordChange: userToEdit ? userToEdit.requiresPasswordChange : true,
-      fotoUrl: userToEdit?.fotoUrl
+      ...(userToEdit?.fotoUrl ? { fotoUrl: userToEdit.fotoUrl } : {})
     };
 
     await Promise.resolve(onSave(savedUser, userToEdit ? undefined : provisionalPassword));
