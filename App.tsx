@@ -446,20 +446,56 @@ const App: React.FC = () => {
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: u.email, password, returnSecureToken: false }),
+            body: JSON.stringify({ email: u.email, password, returnSecureToken: true }),
           }
         );
         const data = await res.json();
         if (data.error) {
           if (data.error.message === 'EMAIL_EXISTS') {
-            // Account already exists with a different password.
-            // Send password reset email so the user can set their own password.
-            try {
-              await sendPasswordResetEmail(auth, u.email);
-            } catch (e) { /* ignore */ }
-            // Save Firestore doc with temp ID — will be migrated to real UID on first login
-            u.id = `pending_${Date.now()}`;
-            alert(`Este e-mail já possui conta. Um link de redefinição de senha foi enviado para ${u.email}. O usuário deve verificar o e-mail para definir a senha e fazer login.`);
+            // Account exists — try signIn with the new password
+            const signInRes = await fetch(
+              `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${firebaseConfig.apiKey}`,
+              {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: u.email, password, returnSecureToken: true }),
+              }
+            );
+            const signInData = await signInRes.json();
+            if (signInData.localId) {
+              // Password matches — use the real UID
+              u.id = signInData.localId;
+            } else {
+              // Password doesn't match — update the password using the REST update endpoint
+              // First try to get the user by sending a password reset
+              // But better: sign up will fail, so we need to update the existing account's password
+              // We'll use the idToken from signIn... but we don't have it.
+              // Best approach: delete old Firestore doc if any, create pending doc, and force password reset
+              try {
+                // Look for any existing Firestore doc with this email and delete it
+                const q = query(collection(db, 'users'), where('email', '==', u.email));
+                const existingDocs = await getDocs(q);
+                for (const d of existingDocs.docs) {
+                  await deleteDoc(doc(db, 'users', d.id));
+                }
+              } catch (e) { /* ignore cleanup errors */ }
+
+              // Send password reset email
+              try {
+                await sendPasswordResetEmail(auth, u.email);
+              } catch (e) { /* ignore */ }
+
+              u.id = `pending_${Date.now()}`;
+              alert(
+                `Este e-mail já possui uma conta com senha diferente.\n\n` +
+                `Um e-mail de redefinição de senha foi enviado para ${u.email}.\n\n` +
+                `O usuário deve:\n` +
+                `1. Verificar a caixa de entrada (e spam) do e-mail ${u.email}\n` +
+                `2. Clicar no link de redefinição\n` +
+                `3. Criar uma nova senha\n` +
+                `4. Fazer login no sistema com a nova senha`
+              );
+            }
           } else {
             alert(`Erro ao criar conta: ${data.error.message}`);
             return false;
