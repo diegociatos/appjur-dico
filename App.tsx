@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ShieldAlert, Lock, Loader2 } from 'lucide-react';
-import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { doc, getDoc, setDoc, onSnapshot, collection, updateDoc, deleteDoc, addDoc } from 'firebase/firestore';
+import { onAuthStateChanged, signOut, sendPasswordResetEmail } from 'firebase/auth';
+import { doc, getDoc, setDoc, onSnapshot, collection, updateDoc, deleteDoc, addDoc, getDocs, query, where } from 'firebase/firestore';
 import { auth, db } from './firebase';
 import firebaseConfig from './firebase-applet-config.json';
 
@@ -138,27 +138,47 @@ const App: React.FC = () => {
           const userData = userSnap.data() as UserProfile;
           setCurrentUser(userData);
         } else {
-          // Bootstrap admin user if not in Firestore
-          const isAdmin = ADMIN_EMAILS.includes(email);
-          const newUser: UserProfile = {
-            id: uid,
-            nome: firebaseUser.displayName || email.split('@')[0],
-            email: email,
-            cargo: isAdmin ? 'Administrador' : 'Advogado',
-            status: 'Ativo',
-            dataCadastro: new Date().toISOString().split('T')[0],
-            notificacoesEmail: true,
-            exibirNoRanking: true,
-            requiresPasswordChange: false,
-          };
+          // Check if admin pre-provisioned a user doc with this email
+          let migratedUser: UserProfile | null = null;
           try {
-            await setDoc(userDocRef, newUser);
-            setCurrentUser(newUser);
-          } catch (err) {
-            console.error('Failed to create user profile:', err);
-            await signOut(auth);
-            setIsAuthLoading(false);
-            return;
+            const q = query(collection(db, 'users'), where('email', '==', email));
+            const pendingSnap = await getDocs(q);
+            if (!pendingSnap.empty) {
+              const oldDoc = pendingSnap.docs[0];
+              const oldData = oldDoc.data() as UserProfile;
+              migratedUser = { ...oldData, id: uid };
+              await setDoc(userDocRef, migratedUser);
+              if (oldDoc.id !== uid) await deleteDoc(doc(db, 'users', oldDoc.id));
+            }
+          } catch (e) {
+            console.error('Error checking for pre-provisioned user:', e);
+          }
+
+          if (migratedUser) {
+            setCurrentUser(migratedUser);
+          } else {
+            // Bootstrap new user
+            const isAdmin = ADMIN_EMAILS.includes(email);
+            const newUser: UserProfile = {
+              id: uid,
+              nome: firebaseUser.displayName || email.split('@')[0],
+              email: email,
+              cargo: isAdmin ? 'Administrador' : 'Advogado',
+              status: 'Ativo',
+              dataCadastro: new Date().toISOString().split('T')[0],
+              notificacoesEmail: true,
+              exibirNoRanking: true,
+              requiresPasswordChange: false,
+            };
+            try {
+              await setDoc(userDocRef, newUser);
+              setCurrentUser(newUser);
+            } catch (err) {
+              console.error('Failed to create user profile:', err);
+              await signOut(auth);
+              setIsAuthLoading(false);
+              return;
+            }
           }
         }
         setIsLoggedIn(true);
@@ -432,22 +452,14 @@ const App: React.FC = () => {
         const data = await res.json();
         if (data.error) {
           if (data.error.message === 'EMAIL_EXISTS') {
-            // Account already exists — look up UID and create Firestore doc
-            const lookupRes = await fetch(
-              `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${firebaseConfig.apiKey}`,
-              {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: u.email, password, returnSecureToken: false }),
-              }
-            );
-            const lookupData = await lookupRes.json();
-            if (lookupData.localId) {
-              u.id = lookupData.localId;
-            } else {
-              // Can't sign in (wrong password) — create Firestore doc with generated ID
-              u.id = `user_${Date.now()}`;
-            }
+            // Account already exists with a different password.
+            // Send password reset email so the user can set their own password.
+            try {
+              await sendPasswordResetEmail(auth, u.email);
+            } catch (e) { /* ignore */ }
+            // Save Firestore doc with temp ID — will be migrated to real UID on first login
+            u.id = `pending_${Date.now()}`;
+            alert(`Este e-mail já possui conta. Um link de redefinição de senha foi enviado para ${u.email}. O usuário deve verificar o e-mail para definir a senha e fazer login.`);
           } else {
             alert(`Erro ao criar conta: ${data.error.message}`);
             return false;
@@ -472,9 +484,16 @@ const App: React.FC = () => {
     return true;
   };
   const handleUpdateUser = (u: UserProfile) => firestoreUpdate('users', u.id, u);
-  const handleResetPassword = (id: string) => {
+  const handleResetPassword = async (id: string) => {
     const u = users.find(x => x.id === id);
-    if (u) firestoreUpdate('users', id, { ...u, status: 'Aguardando Primeiro Acesso', requiresPasswordChange: true });
+    if (u) {
+      try {
+        await sendPasswordResetEmail(auth, u.email);
+      } catch (e) {
+        console.error('Failed to send password reset email:', e);
+      }
+      firestoreUpdate('users', id, { ...u, status: 'Aguardando Primeiro Acesso', requiresPasswordChange: true });
+    }
   };
 
   const handleLogAudit = (log: AuditLog) => firestoreAdd('audit_logs', log);
