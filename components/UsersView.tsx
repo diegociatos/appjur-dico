@@ -79,7 +79,7 @@ const UsersView: React.FC<UsersViewProps> = ({ users, onAddUser, onUpdateUser, o
       isOpen: true,
       userId: user.id,
       userName: user.nome,
-      newPass: pass
+      newPass: ''
     });
     onResetPassword(user.id);
   };
@@ -245,7 +245,7 @@ const UsersView: React.FC<UsersViewProps> = ({ users, onAddUser, onUpdateUser, o
                     <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center text-amber-500">
                       <Key size={20} />
                     </div>
-                    <h3 className="text-lg font-serif font-bold text-[#8B1538]">Senha Resetada</h3>
+                    <h3 className="text-lg font-serif font-bold text-[#8B1538]">Redefinição de Senha</h3>
                  </div>
                  <button onClick={() => setResetModalData(prev => ({ ...prev, isOpen: false }))} className="text-gray-400 hover:text-red-500 transition-colors">
                     <X size={24} />
@@ -253,29 +253,27 @@ const UsersView: React.FC<UsersViewProps> = ({ users, onAddUser, onUpdateUser, o
               </div>
               <div className="p-10 space-y-6">
                  <p className="text-sm text-gray-500 leading-relaxed font-serif italic">
-                   A senha do usuário <strong>{resetModalData.userName}</strong> foi redefinida com sucesso. 
-                   Forneça a nova senha provisória abaixo para o acesso.
+                   Um <strong>e-mail de redefinição de senha</strong> foi enviado para o usuário <strong>{resetModalData.userName}</strong>.
                  </p>
                  
-                 <div className="space-y-2">
-                    <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest block">Senha Temporária Gerada</label>
-                    <div className="flex gap-2">
-                       <div className="flex-1 bg-gray-50 border border-gray-100 rounded-xl px-6 py-4 text-lg font-mono font-bold tracking-widest text-[#8B1538] select-all">
-                          {resetModalData.newPass}
+                 <div className="space-y-3">
+                    <div className="flex items-start gap-3 p-4 bg-blue-50 rounded-2xl border border-blue-100">
+                       <CheckCircle2 size={16} className="text-blue-600 mt-0.5 shrink-0" />
+                       <div className="text-[11px] font-serif font-medium text-blue-900 leading-relaxed">
+                         <p className="font-bold mb-1">Instruções para o usuário:</p>
+                         <ol className="list-decimal ml-4 space-y-1">
+                           <li>Verificar a caixa de entrada (e spam) do e-mail</li>
+                           <li>Clicar no link de redefinição do Firebase</li>
+                           <li>Criar uma nova senha pessoal</li>
+                           <li>Fazer login com a nova senha</li>
+                         </ol>
                        </div>
-                       <button 
-                         onClick={handleCopy}
-                         className={`px-5 rounded-xl border transition-all flex items-center justify-center ${copied ? 'bg-green-500 border-green-500 text-white' : 'bg-white border-gray-200 text-gray-400 hover:text-[#8B1538]'}`}
-                       >
-                         {copied ? <CheckCircle2 size={20} /> : <Copy size={20} />}
-                       </button>
                     </div>
                  </div>
 
                  <div className="flex items-start gap-3 p-4 bg-amber-50 rounded-2xl border border-amber-100">
                     <AlertCircle size={16} className="text-amber-600 mt-0.5 shrink-0" />
                     <p className="text-[10px] font-serif font-medium text-amber-900 leading-relaxed italic">
-                      O usuário será forçado a criar uma nova senha pessoal no próximo login. 
                       O status da conta foi alterado para 'Aguardando Primeiro Acesso'.
                     </p>
                  </div>

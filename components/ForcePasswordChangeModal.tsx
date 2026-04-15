@@ -1,6 +1,8 @@
 
 import React, { useState } from 'react';
 import { Lock, ShieldCheck, AlertCircle, Eye, EyeOff, Save } from 'lucide-react';
+import { updatePassword } from 'firebase/auth';
+import { auth } from '../firebase';
 
 interface ForcePasswordChangeModalProps {
   isOpen: boolean;
@@ -12,10 +14,11 @@ const ForcePasswordChangeModal: React.FC<ForcePasswordChangeModalProps> = ({ isO
   const [confirmPass, setConfirmPass] = useState('');
   const [showPass, setShowPass] = useState(false);
   const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
@@ -29,8 +32,21 @@ const ForcePasswordChangeModal: React.FC<ForcePasswordChangeModalProps> = ({ isO
       return;
     }
 
-    // Sucesso
-    onPasswordChanged();
+    setSaving(true);
+    try {
+      if (auth.currentUser) {
+        await updatePassword(auth.currentUser, newPass);
+      }
+      onPasswordChanged();
+    } catch (err: any) {
+      if (err?.code === 'auth/requires-recent-login') {
+        setError('Sessão expirada. Faça logout, entre novamente e tente trocar a senha.');
+      } else {
+        setError('Erro ao alterar senha: ' + (err?.message || 'Tente novamente.'));
+      }
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -96,9 +112,10 @@ const ForcePasswordChangeModal: React.FC<ForcePasswordChangeModalProps> = ({ isO
            <div className="space-y-4 pt-4">
               <button 
                 type="submit"
-                className="w-full py-5 bg-[#8B1538] text-white rounded-2xl font-black text-[11px] uppercase tracking-widest shadow-xl shadow-[#8B1538]/20 flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-95 transition-all"
+                disabled={saving}
+                className="w-full py-5 bg-[#8B1538] text-white rounded-2xl font-black text-[11px] uppercase tracking-widest shadow-xl shadow-[#8B1538]/20 flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50"
               >
-                <Save size={18} /> Definir Nova Senha
+                <Save size={18} /> {saving ? 'Salvando...' : 'Definir Nova Senha'}
               </button>
               <p className="text-center text-[9px] font-black text-gray-300 uppercase tracking-widest">
                 Esta ação é necessária para acessar as funcionalidades.
