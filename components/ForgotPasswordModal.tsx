@@ -22,7 +22,7 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen, onClo
     setError('');
     setIsLoading(true);
     try {
-      await sendPasswordResetEmail(auth, email.trim());
+      await sendPasswordResetEmail(auth, email.trim(), { url: 'https://appjurdico.netlify.app', handleCodeInApp: true });
       setSubmitted(true);
     } catch (err: any) {
       setError('Erro ao enviar e-mail. Verifique o endereço informado.');

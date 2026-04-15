@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { ShieldAlert, Lock, Loader2 } from 'lucide-react';
-import { onAuthStateChanged, signOut, sendPasswordResetEmail } from 'firebase/auth';
+import { onAuthStateChanged, signOut, sendPasswordResetEmail, verifyPasswordResetCode, confirmPasswordReset } from 'firebase/auth';
 import { doc, getDoc, setDoc, onSnapshot, collection, updateDoc, deleteDoc, addDoc, getDocs, query, where } from 'firebase/firestore';
 import { auth, db } from './firebase';
+import ResetPasswordHandler from './components/ResetPasswordHandler';
 import firebaseConfig from './firebase-applet-config.json';
 
 import Sidebar from './components/Sidebar';
@@ -482,7 +483,7 @@ const App: React.FC = () => {
 
               // Send password reset email
               try {
-                await sendPasswordResetEmail(auth, u.email);
+                await sendPasswordResetEmail(auth, u.email, { url: 'https://appjurdico.netlify.app', handleCodeInApp: true });
               } catch (e) { /* ignore */ }
 
               u.id = `pending_${Date.now()}`;
@@ -524,7 +525,7 @@ const App: React.FC = () => {
     const u = users.find(x => x.id === id);
     if (u) {
       try {
-        await sendPasswordResetEmail(auth, u.email);
+        await sendPasswordResetEmail(auth, u.email, { url: 'https://appjurdico.netlify.app', handleCodeInApp: true });
       } catch (e) {
         console.error('Failed to send password reset email:', e);
       }
@@ -796,6 +797,13 @@ const App: React.FC = () => {
   }
 
   if (!isLoggedIn || !currentUser) {
+    // Check for password reset action from email link
+    const urlParams = new URLSearchParams(window.location.search);
+    const mode = urlParams.get('mode');
+    const oobCode = urlParams.get('oobCode');
+    if (mode === 'resetPassword' && oobCode) {
+      return <ResetPasswordHandler oobCode={oobCode} onDone={() => { window.history.replaceState({}, '', window.location.pathname); }} />;
+    }
     return <LoginView onLogin={() => { }} />;
   }
 
